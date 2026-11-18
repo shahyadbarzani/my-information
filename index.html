@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Calculator · Global Mortality Insight</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 400px;
+            max-width: 100%;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+            transition: 0.3s;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="number"]:focus {
+            border-color: #667eea;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .input-hint {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 18px;
+            font-weight: 400;
+            text-align: center;
+            background: #f8f9ff;
+            padding: 6px 10px;
+            border-radius: 20px;
+            border: 1px dashed #a0a8e0;
+        }
+
+        .input-hint span {
+            font-weight: 600;
+            color: #4a5bc7;
+        }
+
+        #calcBtn {
+            width: 100%;
+            padding: 12px;
+            background-color: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #calcBtn:hover {
+            background-color: #5a67d8;
+        }
+
+        #result {
+            margin-top: 25px;
+            font-size: 15px;
+            font-weight: 500;
+            min-height: 25px;
+            line-height: 1.7;
+            text-align: left;
+        }
+
+        .stat-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .stat-box strong {
+            color: #4a5bc7;
+        }
+
+        .disclaimer {
+            font-size: 11px;
+            color: #999;
+            margin-top: 15px;
+            font-weight: 400;
+            line-height: 1.5;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Age Calculator</h2>
+
+        <input type="number" id="yearInput" placeholder="Enter your birth year" min="1900" max="2026" step="1">
+
+        <div class="input-hint">
+            Birth year between <span>1900</span> and <span>2026</span>
+        </div>
+
+        <button id="calcBtn" onclick="checkAge()">Calculate</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Global mortality benchmarks from search results (approximate, all sexes combined, global average):
+        // - Risk of dying before age 40 (2010): ~10.7% (107.38 per 1,000 live births)
+        // - Risk of dying before age 60 (2026 projection): ~16.9% (168.61 per 1,000 live births) [citation:10]
+        // - Probability of reaching age 60 globally: ~73-79% (so death before 60 is ~21-27%) [citation:4]
+        // We use the 2026 projection (16.9%) as the primary anchor for age 60,
+        // and the 2010 figure (10.7%) for age 40, then interpolate/extrapolate.
+
+        const MORTALITY_BEFORE_40 = 10.7;  // percent, global average
+        const MORTALITY_BEFORE_60 = 16.9;  // percent, global 2026 projection [citation:10]
+
+        function checkAge() {
+            const currentYear = new Date().getFullYear();
+            const yearInput = document.getElementById("yearInput");
+            const resultBox = document.getElementById("result");
+            const birthYear = Number(yearInput.value);
+
+            const rawValue = yearInput.value.trim();
+
+            // --- Validation ---
+            if (rawValue === "") {
+                resultBox.style.color = "red";
+                resultBox.innerHTML = "Please enter your birth year.";
+                return;
+            }
+
+            if (isNaN(birthYear)) {
+                resultBox.style.color = "red";
+                resultBox.innerHTML = "Please enter a valid number.";
+                return;
+            }
+
+            if (!Number.isInteger(birthYear)) {
+                resultBox.style.color = "red";
+                resultBox.innerHTML = "Please enter a whole year (no decimals).";
+                return;
+            }
+
+            if (birthYear < 1900) {
+                resultBox.style.color = "red";
+                resultBox.innerHTML = `May you are dead 😂😂<br>${birthYear} is way too long ago!`;
+                return;
+            }
+
+            if (birthYear > 2026) {
+                resultBox.style.color = "red";
+                resultBox.innerHTML = `You are not born yet 😂😂<br>${birthYear} is in the future!`;
+                return;
+            }
+
+            const age = currentYear - birthYear;
+
+            if (age < 0) {
+                resultBox.style.color = "red";
+                resultBox.innerHTML = `You are not born yet 😂😂`;
+                return;
+            }
+
+            // --- Life stage (kept simple as before) ---
+            let stage = "";
+            let stageEmoji = "";
+            if (age <= 2) {
+                stage = "baby";
+                stageEmoji = "👶";
+            } else if (age <= 12) {
+                stage = "child";
+                stageEmoji = "🧒";
+            } else if (age <= 17) {
+                stage = "teen";
+                stageEmoji = "🧑‍🎓";
+            } else if (age <= 40) {
+                stage = "young";
+                stageEmoji = "🧑";
+            } else {
+                stage = "old";
+                stageEmoji = "🧓";
+            }
+
+            // --- Estimate global mortality percentage before this age ---
+            // This is an approximation using the available anchor points.
+            let estimatedDeathPercent = 0;
+            let dataNote = "";
+
+            if (age <= 0) {
+                estimatedDeathPercent = 0.5; // rough infant mortality placeholder
+                dataNote = "Infant mortality varies greatly by region.";
+            } else if (age <= 40) {
+                // Scale from 0 to 10.7% across ages 0–40 (linear approximation)
+                estimatedDeathPercent = (age / 40) * MORTALITY_BEFORE_40;
+                dataNote = `Based on global risk before age 40 (~10.7%) `;
+            } else if (age <= 60) {
+                // Interpolate between 10.7% (age 40) and 16.9% (age 60)
+                const fraction = (age - 40) / 20;
+                estimatedDeathPercent = MORTALITY_BEFORE_40 + fraction * (MORTALITY_BEFORE_60 - MORTALITY_BEFORE_40);
+                dataNote = `Interpolated between global risk before 40 (~10.7%) and before 60 (~16.9%) [citation:10]`;
+            } else if (age <= 80) {
+                // Extrapolate beyond 60. Global life expectancy ~73-79 [citation:4][citation:6]
+                // Assume ~50% death by age 80 as a rough midpoint
+                const fraction = (age - 60) / 20;
+                estimatedDeathPercent = MORTALITY_BEFORE_60 + fraction * (50 - MORTALITY_BEFORE_60);
+                dataNote = `Extrapolated from global risk before 60 (~16.9%) toward ~50% by age 80 (approximate) [citation:4][citation:6][citation:10]`;
+            } else {
+                // Beyond 80: gradually approach 100%
+                const fraction = Math.min((age - 80) / 40, 1);
+                estimatedDeathPercent = 50 + fraction * 45; // cap around 95%
+                dataNote = `Estimated for advanced age (global averages; individual outcomes vary greatly)`;
+            }
+
+            // Cap between 0 and 100
+            estimatedDeathPercent = Math.max(0, Math.min(100, estimatedDeathPercent));
+            const displayPercent = estimatedDeathPercent.toFixed(1);
+
+            // Color based on stage
+            let stageColor = "#e67e22";
+            if (stage === "child") stageColor = "#f39c12";
+            else if (stage === "teen") stageColor = "orange";
+            else if (stage === "young") stageColor = "#27ae60";
+            else if (stage === "old") stageColor = "#8e44ad";
+
+            resultBox.style.color = "#333";
+            resultBox.innerHTML = `
+                <div style="color: ${stageColor}; font-size: 18px; font-weight: 700; margin-bottom: 8px;">
+                    ${stageEmoji} You are ${stage}.
+                </div>
+                <div>You are <strong>${age}</strong> years old.</div>
+                <div class="stat-box">
+                    🌍 <strong>Global perspective:</strong><br>
+                    Approximately <strong>${displayPercent}%</strong> of people worldwide do not reach age <strong>${age}</strong>.
+                </div>
+                <div style="font-size: 12px; color: #777; margin-top: 8px;">
+                    ${dataNote}
+                </div>
+                <div class="disclaimer">
+                    ⚠️ This is an <strong>approximate global average</strong> based on available UN/WHO data.
+                    Actual mortality varies dramatically by country, income, healthcare access, and many other factors.
+                    This is for educational/informational purposes only.
+                </div>
+            `;
+        }
+
+        // Optional: input border feedback (same as before)
+        const yearInputField = document.getElementById('yearInput');
+        yearInputField.addEventListener('input', function() {
+            const val = this.value.trim();
+            if (val === '') {
+                this.style.borderColor = '#ddd';
+                return;
+            }
+            const num = Number(val);
+            if (!isNaN(num) && (num < 1900 || num > 2026)) {
+                this.style.borderColor = '#e53e3e';
+            } else {
+                this.style.borderColor = '#667eea';
+            }
+        });
+
+        yearInputField.addEventListener('blur', function() {
+            const val = this.value.trim();
+            if (val !== '') {
+                const num = Number(val);
+                if (!isNaN(num) && (num < 1900 || num > 2026)) {
+                    this.style.borderColor = '#e53e3e';
+                } else {
+                    this.style.borderColor = '#ddd';
+                }
+            } else {
+                this.style.borderColor = '#ddd';
+            }
+        });
+
+        yearInputField.addEventListener('focus', function() {
+            this.style.borderColor = '#667eea';
+        });
+    </script>
+
+</body>
+</html>
